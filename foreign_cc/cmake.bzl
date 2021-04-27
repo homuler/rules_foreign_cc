@@ -258,6 +258,14 @@ def _attrs():
             doc = "Arguments for the CMake install command",
             mandatory = False,
         ),
+        "out_pkgconfig_file": attr.string(
+            doc = "generated .pc file",
+            mandatory = False,
+        ),
+        "pkgconfig_args": attr.string_list(
+            doc = "Arguments for pkg-config. It is only used when `out_pkgconfig_file` is specified",
+            default = ["--libs", "--static"],
+        ),
         "working_directory": attr.string(
             doc = (
                 "Working directory, with the main CMakeLists.txt " +

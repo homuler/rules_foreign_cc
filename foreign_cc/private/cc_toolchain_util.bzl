@@ -199,21 +199,38 @@ def targets_windows(ctx, cc_toolchain):
         feature_name = "targets_windows",
     )
 
-def create_linking_info(ctx, user_link_flags, files):
+def create_linking_info(ctx, user_link_flags, files, pkgconfig_file, pkgconfig_args = []):
     """Creates CcLinkingInfo for the passed user link options and libraries.
 
     Args:
         ctx (ctx): rule context
         user_link_flags (list of strings): link optins, provided by user
+        pkgconfig_args: arguments for `pkg-config` command
+        pkgconfig_file: pkg-config file
         files (LibrariesToLink): provider with the library files
+    Returns:
+        LinkingContext
     """
+
+    link_flags = user_link_flags
+
+    if pkgconfig_file:
+        exec_result = ctx.execute(
+            arguments = ["pkg-config", "--define-variable=EXT_BUILD_DEPS=$$EXT_BUILD_DEPS$$"] + pkgconfig_args + [pkgconfig_file.path],
+            quiet = False,
+        )
+
+        if exec_result.return_code != 0:
+            fail("pkg-config failed: %s".format(exec_result.stderr))
+        else:
+            link_flags += exec_result.split(" ")
 
     return cc_common.create_linking_context(
         linker_inputs = depset(direct = [
             cc_common.create_linker_input(
                 owner = ctx.label,
                 libraries = _create_libraries_to_link(ctx, files),
-                user_link_flags = depset(direct = user_link_flags),
+                user_link_flags = depset(direct = link_flags),
             ),
         ]),
     )

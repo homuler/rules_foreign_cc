@@ -290,7 +290,6 @@ def cc_external_rule_impl(ctx, attrs):
 
     inputs = _define_inputs(attrs)
     outputs = _define_outputs(ctx, attrs, lib_name)
-    out_cc_info = _define_out_cc_info(ctx, attrs, inputs, outputs)
 
     cc_env = _correct_path_variable(get_env_vars(ctx))
     set_cc_envs = []
@@ -394,6 +393,8 @@ def cc_external_rule_impl(ctx, attrs):
         # this is ignored if use_default_shell_env = True
         env = cc_env,
     )
+
+    out_cc_info = _define_out_cc_info(ctx, attrs, inputs, outputs)
 
     # Gather runfiles transitively as per the documentation in:
     # https://docs.bazel.build/versions/master/skylark/rules.html#runfiles
@@ -605,6 +606,7 @@ _Outputs = provider(
     fields = dict(
         out_include_dir = "Directory with header files (relative to install directory)",
         out_binary_files = "Binary files, which will be created by the action",
+        out_pkgconfig_file = ".pc file, which will be used to decide 'linkopts'",
         libraries = "Library files, which will be created by the action",
         declared_outputs = "All output files and directories of the action",
     ),
@@ -616,6 +618,7 @@ def _define_outputs(ctx, attrs, lib_name):
     attr_interface_libs = []
     attr_shared_libs = []
     attr_static_libs = []
+    attr_pkgconfig_file = getattr(attrs, "out_pkgconfig_file", None)
 
     # TODO: Until the the deprecated attributes are removed, we must
     # create a mutatable list so we can ensure they're being included
@@ -656,7 +659,7 @@ def _define_outputs(ctx, attrs, lib_name):
     _check_file_name(lib_name)
 
     out_include_dir = ctx.actions.declare_directory(lib_name + "/" + attrs.out_include_dir)
-
+    out_pkgconfig_file = ctx.actions.declare_file("/".join([lib_name, attrs.out_lib_dir, "pkgconfig", attr_pkgconfig_file])) if attr_pkgconfig_file else None
     out_binary_files = _declare_out(ctx, lib_name, attrs.out_bin_dir, attr_binaries_libs)
 
     libraries = LibrariesToLinkInfo(
@@ -672,6 +675,7 @@ def _define_outputs(ctx, attrs, lib_name):
     return _Outputs(
         out_include_dir = out_include_dir,
         out_binary_files = out_binary_files,
+        out_pkgconfig_file = out_pkgconfig_file,
         libraries = libraries,
         declared_outputs = declared_outputs,
     )
@@ -818,7 +822,7 @@ def _define_out_cc_info(ctx, attrs, inputs, outputs):
         quote_includes = depset([]),
         defines = depset(attrs.defines),
     )
-    linking_info = create_linking_info(ctx, attrs.linkopts, outputs.libraries)
+    linking_info = create_linking_info(ctx, attrs.linkopts, outputs.libraries, outputs.out_pkgconfig_file, getattr(attrs, "pkgconfig_args", []))
     cc_info = CcInfo(
         compilation_context = compilation_info,
         linking_context = linking_info,
