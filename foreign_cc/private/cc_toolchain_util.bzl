@@ -214,7 +214,10 @@ def create_linking_info(ctx, user_link_flags, files, pkgconfig_file, pkgconfig_a
 
     link_flags = user_link_flags
 
+    print("Creating LinkingInfo")
+    print(pkgconfig_file)
     if pkgconfig_file:
+        print(pkgconfig_file)
         exec_result = ctx.execute(
             arguments = ["pkg-config", "--define-variable=EXT_BUILD_DEPS=$$EXT_BUILD_DEPS$$"] + pkgconfig_args + [pkgconfig_file.path],
             quiet = False,
@@ -223,7 +226,9 @@ def create_linking_info(ctx, user_link_flags, files, pkgconfig_file, pkgconfig_a
         if exec_result.return_code != 0:
             fail("pkg-config failed: %s".format(exec_result.stderr))
         else:
-            link_flags += exec_result.split(" ")
+            print(exec_result)
+            print(exec_result.stdout)
+            link_flags += exec_result.stdout.split(" ")
 
     return cc_common.create_linking_context(
         linker_inputs = depset(direct = [

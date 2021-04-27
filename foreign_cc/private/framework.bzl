@@ -619,6 +619,7 @@ def _define_outputs(ctx, attrs, lib_name):
     attr_shared_libs = []
     attr_static_libs = []
     attr_pkgconfig_file = getattr(attrs, "out_pkgconfig_file", None)
+    print("attr_pkgconfig_file: %s".format(attr_pkgconfig_file))
 
     # TODO: Until the the deprecated attributes are removed, we must
     # create a mutatable list so we can ensure they're being included
