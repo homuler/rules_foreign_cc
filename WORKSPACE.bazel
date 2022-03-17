@@ -42,3 +42,12 @@ load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
 # Use this as is if you are using the rbe_ubuntu16_04 container,
 # otherwise refer to RBE docs.
 rbe_autoconfig(name = "buildkite_config")
+
+http_archive(
+    name = "bazel_rules_dict",
+    strip_prefix = "bazel_rules_dict-0.1.1",
+    sha256 = "00adce0dc43d7ef39dcb7f59f8cc5644cde02766bb193f342ecff13d70f60b07",
+    urls = [
+        "https://github.com/homuler/bazel_rules_dict/archive/refs/tags/v0.1.1.tar.gz",
+    ],
+)

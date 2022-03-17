@@ -156,6 +156,8 @@ load(
     "get_ninja_data",
 )
 
+load("@bazel_rules_dict//:dict.bzl", "ValueInfo")
+
 def _cmake_impl(ctx):
     cmake_data = get_cmake_data(ctx)
 
@@ -202,7 +204,13 @@ def _create_configure_script(configureParameters):
 
     # CMake will replace <TARGET> with the actual output file
     flags = get_flags_info(ctx, "<TARGET>")
-    no_toolchain_file = ctx.attr.cache_entries.get("CMAKE_TOOLCHAIN_FILE") or not ctx.attr.generate_crosstool_file
+    cache_entries = {}
+    cache_entries.update(ctx.attr.cache_entries)
+
+    if ctx.attr.cache_entries_target:
+        cache_entries.update(ctx.attr.cache_entries_target[ValueInfo].value)
+
+    no_toolchain_file = cache_entries.get("CMAKE_TOOLCHAIN_FILE") or not ctx.attr.generate_crosstool_file
 
     cmake_commands = []
 
@@ -261,7 +269,7 @@ def _create_configure_script(configureParameters):
         install_prefix = "$$INSTALLDIR$$",
         root = root,
         no_toolchain_file = no_toolchain_file,
-        user_cache = dict(ctx.attr.cache_entries),
+        user_cache = dict(cache_entries),
         user_env = expand_locations_and_make_variables(ctx, ctx.attr.env, "env", data),
         options = attrs.generate_args,
         cmake_commands = cmake_commands,
@@ -359,6 +367,14 @@ def _attrs():
             ),
             mandatory = False,
             default = {},
+        ),
+        "cache_entries_target": attr.label(
+            doc = (
+                "Label that generates cache_entries ValueInfo." +
+                "This will override cache_entries"
+            ),
+            providers = [ValueInfo],
+            mandatory = False,
         ),
         "generate_args": attr.string_list(
             doc = (
